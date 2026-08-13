@@ -24,7 +24,7 @@ The system treats a move as a sequence of frames instead of making a prediction 
 
 First, OpenCV reads the video. MediaPipe then detects the hands in each frame. Each hand is represented using 21 landmarks corresponding to points such as the wrist and finger joints.
 
-The landmarks are normalized so that the model is less dependent on the position and size of the hands in the camera frame. The program also calculates the changes between consecutive frames to give the model information about hand movement.
+The landmarks are normalized so that the model is less dependent on the position and size of the hands in the camera frame. The program also calculates changes between consecutive frames to give the model information about hand movement.
 
 The movement is then processed into a fixed-length sequence of 32 frames. This allows every video to be given to the neural network in the same format.
 
@@ -33,7 +33,21 @@ The processed sequence is passed to a bidirectional GRU (Gated Recurrent Unit) m
 The current pipeline is:
 
 ```text
-Video -> OpenCV -> MediaPipe Hand Landmarks -> Feature Normalization -> Motion Features -> Sequence Processing -> Bidirectional GRU -> Move Prediction
+Video
+  ↓
+OpenCV
+  ↓
+MediaPipe Hand Landmarks
+  ↓
+Feature Normalization
+  ↓
+Motion Features
+  ↓
+Sequence Processing
+  ↓
+Bidirectional GRU
+  ↓
+Move Prediction
 ```
 
 ## Dataset
@@ -66,7 +80,9 @@ dataset/
 
 I created a separate recording program to make the dataset. It allows me to select a move, record multiple clips, and automatically save each clip into the correct folder with the appropriate filename.
 
-## How to Run It
+The dataset itself is not required to run the pretrained model, so the video files do not need to be included in the repository.
+
+## Installation
 
 ### Requirements
 
@@ -75,73 +91,112 @@ You will need:
 * Python 3.10 or newer
 * A working webcam
 * A computer capable of running PyTorch
-* The Python packages used by the project
 
-Install the required packages with:
+The project uses:
+
+* OpenCV
+* MediaPipe
+* PyTorch
+* NumPy
+
+Install the dependencies with:
 
 ```bash
-pip install opencv-python mediapipe torch numpy
+pip install -r requirements.txt
 ```
 
-### Recording Your Own Dataset
+## Running the Project
 
-If you want to create your own dataset, run:
+### Using the Pretrained Model
+
+The repository includes the trained model:
+
+```text
+cube_move_ai_model.pth
+```
+
+Make sure this file is in the same directory as `cube_move_ai.py`.
+
+Connect a webcam and run:
+
+```bash
+python cube_move_ai.py live
+```
+
+The program will open the webcam, detect hand landmarks, record a movement sequence, and use the trained model to predict the Rubik's Cube move.
+
+### Controls
+
+* `Space` - Start or stop recording a move
+* `C` - Clear the move history
+* `R` - Reset the move history
+* `Z` - Undo the most recent move
+* `Q` - Quit
+
+The program also displays the most recent prediction, its confidence, recent moves, and the model's top predictions.
+
+## Creating Your Own Dataset
+
+To create a new dataset, run:
 
 ```bash
 python record_dataset.py
 ```
 
-The program opens the webcam and allows you to select which Rubik's Cube move you are recording. It records individual clips and saves them into the corresponding dataset folder.
+The recording program allows you to select a move and automatically save individual video clips into the corresponding dataset folder.
 
-Each clip should contain one move.
+Each video should contain one Rubik's Cube move.
 
-The dataset recorder is currently configured around the dataset used for this project, so you may need to change the paths or recording settings if you want to build a different dataset.
+The recording program was designed specifically for the dataset used in this project, so some settings may need to be changed when creating a different dataset.
 
-### Training
+## Training
 
-After creating the dataset, the training program can be used to extract the hand landmark features and train the classification model.
+The same `cube_move_ai.py` program contains the training pipeline.
 
-The training process includes:
-
-* Training and validation splitting
-* Hand landmark normalization
-* Motion feature extraction
-* Sequence resampling
-* Data augmentation
-* Class weighting
-* Early stopping
-* Gradient clipping
-* GPU support when available
-
-The trained model can then be used by the main CubeMove AI program.
-
-### Running CubeMove AI
-
-Connect a webcam and run:
+To train a new model using the dataset, run:
 
 ```bash
-python cube_move_ai.py
+python cube_move_ai.py train
 ```
 
-The program processes the webcam input, tracks the hands, and uses the trained model to predict the Rubik's Cube move.
+The best-performing model checkpoint is saved as:
+
+```text
+cube_move_ai_model.pth
+```
+
+## Checking the Dataset and Model
+
+The program also includes a quick diagnostic command:
+
+```bash
+python cube_move_ai.py check
+```
+
+This can be used to inspect the available dataset clips, check whether MediaPipe is available, and verify the model checkpoint.
 
 ## Results
 
-The project successfully produced a custom dataset of 360 labeled video clips and a trained neural network capable of classifying the 12 supported Rubik's Cube moves.
+The project produced:
 
-The project is still being improved, so the current model should be considered a working prototype rather than a finished speedcubing analysis system.
+* A custom dataset containing 360 labeled video clips
+* 12 move classes
+* A trained bidirectional GRU neural network
+* A webcam-based move prediction system
+
+The current model is a working prototype and is still being improved. Its performance can vary depending on the camera position, lighting, and the way a person performs a move.
 
 ## Limitations
 
 The current model primarily relies on hand movement. Because of this, some moves are more difficult to distinguish than others.
 
-Moves such as B, D, and L can be harder to recognize from a single camera because they are less visible from the camera's perspective. Performance can also change with different lighting, camera positions, or people with different hand movements.
+Moves such as `B`, `D`, and `L` can be harder to recognize from a single camera because they are less visible from the camera's perspective. Performance can also change with different lighting, camera positions, and individual hand movement patterns.
 
-The current model does not directly use cube sticker colors. If the cube sticker colors were taken into consideration, an issue would arise for people with different skin tones or fingernail colors. 
+The current model does not directly use cube sticker colors.
 
 ## Future Improvements
 
-There are several improvements I would like to make:
+There are several directions I would like to explore:
 
 * Use cube sticker color changes as an additional source of information.
 * Automatically locate the Rubik's Cube in the camera frame.
@@ -169,14 +224,15 @@ These projects helped me understand existing approaches to Rubik's Cube move det
 Cube_Move_AI/
 ├── cube_move_ai.py
 ├── record_dataset.py
-├── dataset/
-└── README.md
+├── cube_move_ai_model.pth
+├── requirements.txt
+├── .gitignore
+├── README.md
+└── demo.png
 ```
 
-The dataset may not be included in the repository because of the size of the video files.
+The dataset and cached MediaPipe features are not included because they are generated locally and can take up a significant amount of storage.
 
 ## Author
 
 Amit Kamal Mudududla
-
-CubeMove AI is a personal project combining computer vision, hand tracking, and deep learning to recognize Rubik's Cube moves.
