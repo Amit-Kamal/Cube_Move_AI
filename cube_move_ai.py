@@ -62,6 +62,7 @@ mp_model_complexity = 1
 min_detection_confidence = 0.5
 min_tracking_confidence = 0.5
 
+@dataclass
 class ClipExample:
     label: str
     video_path: Path
@@ -165,7 +166,6 @@ def create_hands_tracker(static_image_mode: bool) -> object:
         static_image_mode = static_image_mode,
         max_num_hands = max_hands,
         model_complexity = mp_model_complexity,
-        max_num_hands = max_hands,
         min_detection_confidence = min_detection_confidence,
         min_tracking_confidence = min_tracking_confidence
     )
@@ -412,9 +412,9 @@ def split_examples_stratified(examples: list[ClipExample],validation_ratio: floa
         training_examples.extend(label_examples[:split_index])
         validation_examples.extend(label_examples[split_index:])
 
-        random.shuffle(training_examples)
-        random.shuffle(validation_examples)
-        return training_examples, validation_examples
+    random.shuffle(training_examples)
+    random.shuffle(validation_examples)
+    return training_examples, validation_examples
 
 def compute_class_weights(examples: list[ClipExample], labels: list[str]) -> torch.Tensor:
     counts = Counter(example.label for example in examples)
@@ -422,11 +422,11 @@ def compute_class_weights(examples: list[ClipExample], labels: list[str]) -> tor
     weights = []
     for label in labels:
         label_count = counts[label]
-        weights.append(total_count / len(labels) * label_count)
+        weights.append(total_count / (len(labels) * label_count))
     return torch.tensor(weights, dtype=torch.float32)
 
 def save_checkpoint(mode_path: Path, model: MoveClassifier, labels: list[str], feature_mean: np.ndarray, feature_std: np.ndarray, sequence_length: int, validation_accuracy: float) -> None:
-    mode_path.parent.mkdir(parents=True, exists_ok=True)
+    mode_path.parent.mkdir(parents=True, exist_ok=True)
 
     checkpoint = {
         "model_state_dict": model.state_dict(),
@@ -504,7 +504,7 @@ def run_epoch(model: MoveClassifier, data_loader: DataLoader, criterion: nn.Modu
     accuracy = total_correct / max(total_examples, 1)
     return average_loss, accuracy
 
-def load_example(dataset_dir: Path, labels: list[str], referesh_cache: bool) -> list[ClipExample]:
+def load_example(dataset_dir: Path, labels: list[str], refresh_cache: bool) -> list[ClipExample]:
     example: list[ClipExample] = []
     print("Extracting features from video files...")
     with create_hands_tracker(static_image_mode=True) as hands_tracker:
@@ -513,7 +513,7 @@ def load_example(dataset_dir: Path, labels: list[str], referesh_cache: bool) -> 
             print(f"\n{label}: {len(video_paths)} video(s) found.")
 
             for video_path in video_paths:
-                sequence, used_cache = extract_video_features(video_path, hands_tracker, refresh_cache=referesh_cache)
+                sequence, used_cache = extract_video_features(video_path, hands_tracker, refresh_cache=refresh_cache)
                 if sequence is None:
                     continue
                 if not sequence_has_landmarks(sequence):
@@ -594,14 +594,14 @@ def command_train(args: argparse.Namespace) -> int:
             best_validation_accuracy = validation_accuracy
             best_validation_loss = validation_loss 
             epochs_without_improvement = 0
-            save_checkpoint(model_path = args.model, model=model, labels=labels, feature_mean=feature_mean, feature_std=feature_std, sequence_length=args.sequence_length, validation_accuracy=validation_accuracy)
+            save_checkpoint(mode_path=args.model, model=model, labels=labels, feature_mean=feature_mean, feature_std=feature_std, sequence_length=args.sequence_length, validation_accuracy=validation_accuracy)
             print(f"  New best model saved to {args.model}")
 
         else:
             epochs_without_improvement += 1
             print(f"  No improvement for {epochs_without_improvement} epoch(s).")
 
-        if epochs_without_improvement >= args.early_stopping_patience:
+        if epochs_without_improvement >= args.patience:
             print(f"Early stopping triggered after {epochs_without_improvement} epochs without improvement.")
             break
 
@@ -716,7 +716,7 @@ def draw_overlay(
 
 def command_live(args: argparse.Namespace) -> int:
     require_mediapipe()
-    device = choose_device(args._get_args)
+    device = choose_device(args.device)
 
     try:
         model, labels, feature_mean, feature_std, sequence_length = load_model_bundle(args.model, device)
@@ -742,7 +742,7 @@ def command_live(args: argparse.Namespace) -> int:
     recording = False
 
     drawing_utils = mp.solutions.drawing_utils if mp is not None else None
-    hands_connections = mp.solutions.hand.HAND_CONNECTIONS if mp is not None else None
+    hands_connections = mp.solutions.hands.HAND_CONNECTIONS if mp is not None else None
 
     try:
         with create_hands_tracker(static_image_mode=False) as hands_tracker:
@@ -895,4 +895,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    
+
