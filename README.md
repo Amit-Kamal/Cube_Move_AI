@@ -137,7 +137,7 @@ The current model primarily relies on hand movement. Because of this, some moves
 
 Moves such as B, D, and L can be harder to recognize from a single camera because they are less visible from the camera's perspective. Performance can also change with different lighting, camera positions, or people with different hand movements.
 
-The current model does not directly use cube sticker colors.
+The current model does not directly use cube sticker colors. If the cube sticker colors were taken into consideration, an issue would arise for people with different skin tones or fingernail colors. 
 
 ## Future Improvements
 
