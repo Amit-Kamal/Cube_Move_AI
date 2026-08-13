@@ -33,21 +33,7 @@ The processed sequence is passed to a bidirectional GRU (Gated Recurrent Unit) m
 The current pipeline is:
 
 ```text
-Video
-  ↓
-OpenCV
-  ↓
-MediaPipe Hand Landmarks
-  ↓
-Feature Normalization
-  ↓
-Motion Features
-  ↓
-Sequence Processing
-  ↓
-Bidirectional GRU
-  ↓
-Move Prediction
+Video -> OpenCV -> MediaPipe Hand Landmarks -> Feature Normalization -> Motion Features -> Sequence Processing -> Bidirectional GRU -> Move Prediction
 ```
 
 ## Dataset
