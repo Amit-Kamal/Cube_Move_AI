@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Build and distribution files
+build/
+dist/
+*.egg-info/
+
+# Python testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Model files
+*.pt
+*.pth
+*.onnx
+
+# Large datasets
+dataset/
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Temporary files
+*.tmp
+*.temp
